@@ -1,19 +1,29 @@
 <script>
 	import { ethers } from "ethers";
 	import QRCode from "qrcode";
+	import { onMount } from "svelte";
+	import { getTexts } from "./helpers.js";
 
 	let walletInfos = [];
-	let amountOfWallets = 1;
+	let amountOfWallets = 99;
 	let counter = 0;
-	let ready = false;
+	let generationCompleted = false;
 	let resultOfCreateRandom;
 	let walletFromPrivateKey;
+	let texts = {};
+	let ready = false;
+	let showQRCodesAlso = false;
+
+	onMount(async () => {
+		texts = getTexts();
+		ready = true;
+	});
 
 	async function generateOne() {
 		let walletInfo = {};
 		resultOfCreateRandom = ethers.Wallet.createRandom();
 		walletFromPrivateKey = new ethers.Wallet(
-			resultOfCreateRandom.chainCode
+			resultOfCreateRandom.chainCode,
 		);
 
 		walletInfo.publicKey = walletFromPrivateKey.address;
@@ -34,7 +44,7 @@
 				function (error) {
 					if (error) console.error(error);
 					console.log("qr code addresssuccess!");
-				}
+				},
 			);
 			QRCode.toCanvas(
 				document.getElementById(walletInfo.canvasIDPrivateKey),
@@ -43,7 +53,7 @@
 				function (error) {
 					if (error) console.error(error);
 					console.log("qr code private key success!");
-				}
+				},
 			);
 		}
 	}
@@ -55,79 +65,92 @@
 			let walletInfo = await generateOne();
 			walletInfos.push(walletInfo);
 		}
-		ready = true;
+		generationCompleted = true;
 
-		setTimeout(() => {
-			prepareQRCodes(walletInfos);
-		}, 1 * 200);
+		if (showQRCodesAlso) {
+			setTimeout(() => {
+				prepareQRCodes(walletInfos);
+			}, 1 * 200);
+		}
 	}
 </script>
 
 <main>
-	{#if !ready}
-		<div class="noprint">
-			<h3>Paperwallet Generator</h3>
+	{#if ready}
+		{#if !generationCompleted}
+			<div class="noprint">
+				<h3>Paperwallet Generator</h3>
 
-			How many wallets do you want to generate?
-			<p />
-			<div class="center">
-				<input type="number" bind:value={amountOfWallets} />
-				<button on:click={generateAll}>generate</button>
+				<p />
+				<div class="center">
+					<label class="checkerContainer">
+						<input type="checkbox" bind:value={showQRCodesAlso} />
+						<!-- <span class="checkmark"></span> -->
+						{texts.includingQRCodes}
+					</label>
+					<br />
+					<input type="number" bind:value={amountOfWallets} />
+					<button on:click={generateAll}>{texts.generate}</button>
+				</div>
+			</div>
+		{/if}
+
+		<div class="center">
+			{#if generationCompleted}
+				{#each walletInfos as wi, index}
+					<div
+						class={(showQRCodesAlso && index % 2 === 0) || (!showQRCodesAlso && index % 8 === 0) && index > 1
+							? "pageBreak"
+							: "relax"}
+					>
+						<a href="https://FreedomCash.org" target="_blank">
+							<h4>FreedomCash.org</h4>
+						</a>
+						<div class="small">
+							{texts.congrats}
+							<br />
+							https://zkevm.polygonscan.com/token/0xfCA73F9A3E1CdA74bD4E9e595c98833bDB2e56C6
+							<p></p>
+							<b> Public Key (Share): </b>
+							{wi.publicKey} <br />
+							{#if showQRCodesAlso}
+								<canvas id={wi.canvasIDPublicKey} />
+							{/if}
+							<p />
+							<b> Private Key (do not share): </b>
+							{wi.privateKey} <br />
+
+							{#if showQRCodesAlso}
+								<canvas id={wi.canvasIDPrivateKey} />
+							{/if}
+						</div>
+					</div>
+				{/each}
+			{/if}
+			<div class="noprint">
+				{#if walletInfos.length === amountOfWallets}
+					<div class="noprint">
+						<p></p>
+						<button class="b1" onclick="window.print()"
+							>{texts.print}</button
+						>
+						<p />
+						<button class="b1" onclick="window.location.reload()"
+							>{texts.reload}</button
+						>
+					</div>
+
+					<p><br /></p>
+					Generated public wallet addresses:
+					<p />
+					{#each walletInfos as wiForList}
+						{wiForList.publicKey} <br />
+					{/each}
+				{/if}
+				<p><br /></p>
 			</div>
 		</div>
 	{/if}
-
-	<div class="center">
-		{#if ready}
-			{#each walletInfos as wi, index}
-				<div
-					class={index % 2 === 0 && index > 1 ? "pageBreak" : "relax"}
-				>
-						<a href="https://FreedomCash.org" target="_blank">
-						<h4>FreedomCash.org</h4>
-						
-					</a>
-					<div class="small">
-						Congratulations. You have found a Freedom Cash Paperwallet.
-						<br>
-						https://zkevm.polygonscan.com/token/0xB02474b105fd6dcb79610e5e770d492E034CAc55
-						<p></p>
-						<b> Public Key (Share): </b>
-						{wi.publicKey} <br />
-						<canvas id={wi.canvasIDPublicKey} />
-						<p />
-						<b> Private Key (do not share): </b>
-						{wi.privateKey} <br />
-						<b> Mnemonic (do not share): </b>
-						{wi.mnemonic}
-						<br />
-
-						<canvas id={wi.canvasIDPrivateKey} />
-					</div>
-				</div>
-			{/each}
-		{/if}
-		<div class="noprint">
-			{#if walletInfos.length === amountOfWallets}
-				<div class="noprint">
-					<p></p>
-					<button class="b1" onclick="window.print()">Print Paperwallets</button>
-					<p />
-					<button class="b1" onclick="window.location.reload()"
-						>Reload Page</button
-					>
-				</div>
-
-				<p><br /></p>
-				Generated public wallet addresses:
-				<p />
-				{#each walletInfos as wiForList}
-					{wiForList.publicKey} <br>
-				{/each}
-			{/if}
-			<p><br></p>
-		</div>
-	</div>
 </main>
 
 <style>
@@ -164,6 +187,6 @@
 
 		.pageBreak {
 			page-break-before: always;
-		} 
+		}
 	}
 </style>
