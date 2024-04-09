@@ -19,15 +19,12 @@
 		ready = true;
 	});
 
-	async function generateOne() {
+	function generateOne() {
 		let walletInfo = {};
-		resultOfCreateRandom = ethers.Wallet.createRandom();
-		walletFromPrivateKey = new ethers.Wallet(
-			resultOfCreateRandom.chainCode,
-		);
-
-		walletInfo.address = walletFromPrivateKey.address;
-		walletInfo.privateKey = walletFromPrivateKey.privateKey;
+		const resultOfCreateRandom = ethers.Wallet.createRandom();
+		// this.logger.warning(checker)
+		walletInfo.address = resultOfCreateRandom.address;
+		walletInfo.privateKey = resultOfCreateRandom.privateKey;
 		walletInfo.mnemonic = resultOfCreateRandom.mnemonic.phrase;
 		walletInfo.canvasIDAddress = `canvasAddress${counter}`;
 		walletInfo.canvasIDPrivateKey = "canvasPrivateKey" + counter;
@@ -109,7 +106,7 @@
 						<div class="small">
 							<!-- {texts.congrats} -->
 							<p></p>
-							<b> Freedom Wallet Address (Share): </b>
+							<b> Freedom Cash Wallet Address (Share): </b>
 							{wi.address} <br />
 							{#if showQRCodesAlso}
 								<canvas id={wi.canvasIDAddress} />
